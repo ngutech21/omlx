@@ -319,13 +319,19 @@ final class ModelSettingsScreenVMTests: XCTestCase {
         XCTAssertEqual(vm.qwen35AnePrefillGdnFraction, "0.527")
     }
 
+    /// Labels follow the user's locale ("42 %" in German), so expect the
+    /// same format the app uses instead of hard-coded English strings.
+    private func percent(_ value: Double) -> String {
+        value.formatted(.percent.precision(.fractionLength(0)))
+    }
+
     func testK2AnePresetsKeepOneThirdAndExistingValues() {
         let vm = ModelSettingsScreenVM()
         vm.model = makeModel(id: "mova", configModelType: "k2_horizon")
         vm.qwen35AnePrefillEnabled = true
         let presets = ModelSettingsScreenVM.aneFractionOptions(current: "0.42", presets: [1.0 / 3.0, 0.5])
         XCTAssertEqual(presets.map(\.0), ["0.42", String(1.0 / 3.0), "0.5"])
-        XCTAssertEqual(presets.map(\.1), ["42%", "33%", "50%"])
+        XCTAssertEqual(presets.map(\.1), [0.42, 1.0 / 3.0, 0.5].map(percent))
         vm.qwen35AnePrefillFraction = presets[0].0
         XCTAssertEqual(vm.currentSettingsDict()[ProfileSettingsKey.qwen35AnePrefillFraction]?.value as? Double, 0.42)
         vm.qwen35AnePrefillFraction = presets[1].0
@@ -336,7 +342,7 @@ final class ModelSettingsScreenVMTests: XCTestCase {
     func testK2SharedPresetsKeepLoadedStringSelection() {
         for current in ["0", "0.0", "1", "1.0", String(1.0 / 3.0)] {
             let options = ModelSettingsScreenVM.aneFractionOptions(current: current, presets: [0, 1.0 / 3.0, 1])
-            XCTAssertEqual(options.map(\.1), ["0%", "33%", "100%"])
+            XCTAssertEqual(options.map(\.1), [0, 1.0 / 3.0, 1].map(percent))
             XCTAssertEqual(options.filter { $0.0 == current }.count, 1)
         }
     }
